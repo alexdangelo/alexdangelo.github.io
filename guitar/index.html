@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tab Practice Player</title>
+<link rel="stylesheet" href="style.css">
+<script src="vendor/alphaTab.min.js"></script>
+</head>
+<body>
+<div class="drop" id="drop">Drop your tab file to open it</div>
+<div class="wrap">
+
+<header class="top">
+  <div class="titlebox">
+    <h1 class="song-title" id="songTitle">Loading…</h1>
+    <div class="song-meta" id="songMeta"></div>
+  </div>
+  <div class="row">
+    <label for="trackSel" class="small muted">Your part</label><select id="trackSel"></select>
+    <button class="btn sm" id="reopenBtn" type="button" hidden></button>
+    <button class="btn sm" id="demoBtn" type="button" hidden>Demo riff</button>
+    <label class="btn sm primary" for="fileInput" title="Guitar Pro (.gp, .gpx, .gp5, .gp4, .gp3), MusicXML (.musicxml, .xml, .mxl), Capella (.capx), alphaTex. You can also drag a file onto the page.">Open tab file</label>
+    <input class="vh" type="file" id="fileInput" accept=".gp,.gpx,.gp3,.gp4,.gp5,.gp7,.gp8,.musicxml,.xml,.mxl,.capx,.alphatex,.atex,.tex,.txt">
+  </div>
+</header>
+<div class="status" id="status" role="status" aria-live="polite"></div>
+<nav class="sections" id="sections" aria-label="Song sections"></nav>
+
+<section id="tabBox" aria-label="Tab. Click a beat to move there.">
+  <div id="simpleView"></div>
+  <div id="detailWrap" hidden>
+    <div id="atHost"></div>
+    <div id="atOverlay"><div id="atLoop"></div><div id="atPick"></div><div id="atCursor"></div></div>
+    <div class="detail-msg" id="detailMsg">Drawing the music…</div>
+  </div>
+</section>
+</div>
+
+<div class="tip" id="tip" role="dialog" hidden><b id="tipT"></b><span id="tipB"></span></div>
+
+<div class="tt" id="tt" role="tooltip" hidden><b id="ttT"></b><span id="ttB"></span><span class="ttk" id="ttK"></span></div>
+<div class="toast" id="toast" role="status" hidden><span id="toastText"></span><button class="toastbtn" id="toastBtn" type="button">Set loop</button></div>
+<div class="dock" id="dock">
+  <div class="fbwrap" id="fbWrap"><div class="fbscroll" id="fbScroll"><div id="fretboard"></div></div></div>
+  <div class="bar-ctl" role="toolbar" aria-label="Playback controls">
+    <span class="playwrap"><span class="countin" id="countIn" aria-live="polite"></span><button class="playbtn" id="playBtn" data-tt="Play / pause|Starts or stops the music from the highlighted beat.|Space" type="button" aria-label="Play (Space)">
+      <svg id="icoPlay" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="7,4 20,12 7,20"></polygon></svg>
+      <svg id="icoPause" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="display:none"><rect x="6" y="5" width="4" height="14"></rect><rect x="14" y="5" width="4" height="14"></rect></svg>
+    </button></span>
+    <button class="ib" id="rewindBtn" data-tt="Back to start|Jumps to the start of your loop, or to the start of the song if no loop is set.|" type="button" aria-label="Back to start">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="5" width="3" height="14"></rect><polygon points="20,5 9,12 20,19"></polygon></svg>
+    </button>
+    <div class="grp">
+      <button class="ib" id="slower" data-tt="Slower|Slows the song down 5% without changing its pitch.|−" type="button" aria-label="Slower (−)">−</button>
+      <label class="speedlbl" for="speed"><b id="speedLbl">60%</b><span id="bpmLbl"></span></label>
+      <input id="speed" type="range" data-tt="Speed|Slows the song down without changing its pitch. Start slow and work your way up.|+ −" min="10" max="100" step="5" value="60" aria-label="Speed">
+      <button class="ib" id="faster" data-tt="Faster|Speeds the song up 5%, up to full speed.|+" type="button" aria-label="Faster (+)">+</button>
+    </div>
+    <div class="grp">
+      <button class="chip" id="loopBtn" data-tt="Loop|Repeats the part you chose over and over. Click to turn the loop on or off.|L" type="button" aria-pressed="false"><span id="loopText">Loop off</span></button>
+      <button class="tb" id="pickLoopBtn" data-tt="Set loop|Click the beat where the loop should start, then the beat where it should end.|" type="button" aria-pressed="false">Set loop</button>
+      <button class="tb" id="loopSectionBtn" data-tt="Loop section|Loops the whole section you’re in, like the intro or the chorus.|" type="button">Section</button>
+    </div>
+    <div class="grp">
+      <button class="tb" id="trainerBtn" data-tt="Speed trainer|When a loop is on, the speed goes up 5% each time the loop repeats, until it reaches 100%.|" type="button" aria-pressed="false">Speed trainer</button>
+      <button class="tb" id="countInBtn" data-tt="Count-in|Plays one bar of clicks before the music starts, so you know when to come in.|" type="button" aria-pressed="false">Count-in</button>
+      <button class="tb" id="metroBtn" data-tt="Metronome|Clicks on every beat at the current speed, whether or not the song is playing.|M" type="button" aria-pressed="false" aria-label="Metronome"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M9 3h6l4 18H5z"></path><line x1="12" y1="16" x2="17" y2="6"></line></svg><span class="beats" id="beats" aria-hidden="true"><span></span><span></span><span></span><span></span></span></button>
+    </div>
+    <div class="grp">
+      <div class="popwrap"><button class="tb" type="button" data-pop="soundPop" data-tt="Sound of your part|Choose grunge distortion, clean guitar, follow the song, or off, and set its volume.|" aria-expanded="false">Sound ▾</button>
+        <div class="pop" id="soundPop" hidden>
+          <div class="small muted">Sound of your part</div>
+          <div class="col" id="tones"></div>
+          <div class="hint" id="toneHint"></div>
+          <label class="small muted" for="gtrVol">Volume</label><input type="range" id="gtrVol" min="0" max="100" value="80">
+        </div>
+      </div>
+      <div class="popwrap"><button class="tb" type="button" data-pop="bandPop" data-tt="Band|Turn the other instruments on or off and set how loud they are.|" aria-expanded="false">Band ▾</button>
+        <div class="pop" id="bandPop" hidden>
+          <button class="tb" id="bandBtn" type="button" aria-pressed="true">Band backing</button>
+          <div class="mixer" id="mixer"></div>
+          <label class="small muted" for="backVol">Band volume</label><input type="range" id="backVol" min="0" max="100" value="70">
+        </div>
+      </div>
+    </div>
+    <div class="grp right">
+      <div class="seg" role="group" aria-label="Tab view">
+        <button type="button" id="viewSimple" data-tt="Simple view|Big, easy-to-read tab numbers with tappable technique badges.|" aria-pressed="true">Simple</button>
+        <button type="button" id="viewDetailed" data-tt="Detailed view|Full notation with rhythm, bends, vibrato and other markings.|" aria-pressed="false">Detailed</button>
+      </div>
+      <button class="tb" id="fbBtn" data-tt="Fretboard|Shows or hides the fretboard. Hide it to see more music.|" type="button" aria-pressed="true" aria-label="Show fretboard"><svg width="18" height="14" viewBox="0 0 24 18" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1" y="1" width="22" height="16" rx="1"></rect><line x1="1" y1="6" x2="23" y2="6"></line><line x1="1" y1="11" x2="23" y2="11"></line><line x1="8" y1="1" x2="8" y2="17"></line><line x1="15" y1="1" x2="15" y2="17"></line></svg></button>
+      <div class="popwrap"><button class="ib" type="button" data-pop="morePop" data-tt="More|Keep screen on, standard notation, light or dark mode, and keyboard shortcuts.|" aria-expanded="false" aria-label="More options">⋯</button>
+        <div class="pop" id="morePop" hidden>
+          <button class="sw" id="wakeBtn" type="button" role="switch" aria-checked="false"><span class="swtext"><b>Keep screen on</b><span class="swstate" id="wakeBtnState"></span></span><span class="swtrack" aria-hidden="true"><span class="swknob"></span></span></button>
+          <button class="sw" id="notationBtn" type="button" role="switch" aria-checked="false"><span class="swtext"><b>Standard notation</b><span class="swstate" id="notationBtnState"></span></span><span class="swtrack" aria-hidden="true"><span class="swknob"></span></span></button>
+          <button class="sw" id="themeBtn" type="button" role="switch" aria-checked="false"><span class="swtext"><b>Dark mode</b><span class="swstate" id="themeBtnState"></span></span><span class="swtrack" aria-hidden="true"><span class="swknob"></span></span></button>
+          <div class="small muted">Keys: Space play/pause · L loop · M metronome · ← → step · + − speed</div>
+          <div class="small muted">Guitar and bass sounds: Fluid R3 GM SoundFont by Frank Wen (MIT license). Music drawing: alphaTab.</div>
+          <div class="small muted" id="appVersion"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
